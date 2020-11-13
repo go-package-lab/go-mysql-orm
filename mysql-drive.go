@@ -1,11 +1,12 @@
 package go_mysql_orm
 
 import (
-"database/sql"
-"errors"
-"fmt"
-"github.com/go-sql-driver/mysql"
-"strings"
+	"database/sql"
+	"errors"
+	"fmt"
+	"github.com/go-sql-driver/mysql"
+	"log"
+	"strings"
 )
 
 type DataStruct map[string]interface{}
@@ -26,37 +27,25 @@ type Client struct {
 	*sql.DB
 	Config
 }
-func NewClient(cfg Config) *Client {
-	c:= Client{}
-	c.DriverName = cfg.DriverName
-	c.Addr = cfg.Addr
-	c.User = cfg.User
-	c.Passwd = cfg.Passwd
-	c.Port = cfg.Port
-	c.DBName = cfg.DBName
-	if cfg.Debug=="true" {
-		c._debug = true
-	} else {
-		c._debug = false
-	}
-	c.Connect()
-	return &c
-}
 
-func (c *Client) Connect() (err error) {
+func NewClient(conf Config) *Client {
+	c := Client{}
+	var err error
 	cfg := mysql.NewConfig()
-	cfg.User = c.User
-	cfg.Passwd = c.Passwd
+	cfg.User = conf.User
+	cfg.Passwd = conf.Passwd
 	cfg.Net = "tcp"
-	cfg.Addr = c.Addr
-	cfg.DBName = c.DBName
+	cfg.Addr = conf.Addr
+	cfg.DBName = conf.DBName
 	dsn := cfg.FormatDSN()
 	c.Db, err = sql.Open("mysql", dsn)
 	if err != nil {
-		return err
+		log.Println(err)
+		return nil
 	}
 	if err := c.Db.Ping(); err != nil {
-		return err
+		log.Println(err)
+		return nil
 	}
 	maxOpenConns := 0
 	if c.MaxOpenConns > 0 {
@@ -68,7 +57,7 @@ func (c *Client) Connect() (err error) {
 	}
 	c.Db.SetMaxOpenConns(maxOpenConns)
 	c.Db.SetMaxIdleConns(maxIdleConns)
-	return nil
+	return &c
 }
 
 func (S *DataStruct) parseData() (string, []interface{}, error) {
@@ -109,7 +98,7 @@ func (c *Client) Insert(table string, datas DataStruct) (id int64, err error) {
 	placeString = placeString[:len(placeString)-1]
 	sqlString := "INSERT INTO `" + table + "` (" + s + ") VALUES (" + placeString + ")"
 	if c._debug {
-		fmt.Println("SQL Debug:", sqlString,"\nSQL Param:", v)
+		log.Println("SQL Debug:", sqlString, "\nSQL Param:", v)
 	}
 	result, err := c.Db.Exec(sqlString, v...)
 	if err != nil {
@@ -133,7 +122,7 @@ func (c *Client) Update(table string, datas DataStruct, where string, args ...in
 		v = append(v, value)
 	}
 	if c._debug {
-		fmt.Println("SQL Debug:", sqlString,"\nSQL Param:", v)
+		log.Println("SQL Debug:", sqlString, "\nSQL Param:", v)
 	}
 	result, err := c.Db.Exec(sqlString, v...)
 	if err != nil {
@@ -151,7 +140,7 @@ func (c *Client) GetOne(table, fields, where string, args ...interface{}) (map[s
 	}
 	sqlString += " LIMIT 0,1"
 	if c._debug {
-		fmt.Println("SQL Debug:", sqlString,"\nSQL Param:", args)
+		log.Println("SQL Debug:", sqlString, "\nSQL Param:", args)
 	}
 	rows, err := c.Db.Query(sqlString, args...)
 	if err != nil {
@@ -170,7 +159,7 @@ func (c *Client) GetOne(table, fields, where string, args ...interface{}) (map[s
 	for rows.Next() {
 		_ = rows.Scan(cache...)
 		for i, data := range cache {
-			vData:=*(data.(*interface{}))
+			vData := *(data.(*interface{}))
 			switch vData.(type) {
 			case []uint8:
 				item[columns[i]] = string(vData.([]uint8))
@@ -193,7 +182,7 @@ func (c *Client) Select(table string, fields string, where string, args ...inter
 		sqlString += " WHERE " + where
 	}
 	if c._debug {
-		fmt.Println("SQL Debug:", sqlString,"\nSQL Param:", args)
+		log.Println("SQL Debug:", sqlString, "\nSQL Param:", args)
 	}
 	rows, err := c.Db.Query(sqlString, args...)
 	if err != nil {
@@ -213,7 +202,7 @@ func (c *Client) Select(table string, fields string, where string, args ...inter
 		_ = rows.Scan(cache...)
 		item := make(map[string]interface{})
 		for i, data := range cache {
-			vData:=*(data.(*interface{}))
+			vData := *(data.(*interface{}))
 			switch vData.(type) {
 			case []uint8:
 				item[columns[i]] = string(vData.([]uint8))
@@ -233,7 +222,7 @@ func (c *Client) Delete(table string, where string, args ...interface{}) (num in
 		sqlString += " WHERE " + where
 	}
 	if c._debug {
-		fmt.Println("SQL Debug:", sqlString,"\nSQL Param:", args)
+		log.Println("SQL Debug:", sqlString, "\nSQL Param:", args)
 	}
 	stmt, err := c.Db.Prepare(sqlString)
 	if err != nil {
@@ -250,7 +239,7 @@ func (c *Client) Count(table string, where string, args ...interface{}) (total i
 		sqlString += " WHERE " + where
 	}
 	if c._debug {
-		fmt.Println("SQL Debug:", sqlString,"\nSQL Param:", args)
+		log.Println("SQL Debug:", sqlString, "\nSQL Param:", args)
 	}
 	stmt, err := c.Db.Prepare(sqlString)
 	if err != nil {
@@ -278,7 +267,7 @@ func (c *Client) BatchInsert(table string, datas []DataStruct) (num int64, err e
 	var (
 		placeString string
 		columnName  []string
-		sqlColumn string
+		sqlColumn   string
 		columnData  []interface{}
 	)
 	if table == "" || len(datas) == 0 {
@@ -295,18 +284,18 @@ func (c *Client) BatchInsert(table string, datas []DataStruct) (num int64, err e
 	for _, data := range datas {
 		placeString += fmt.Sprintf("(%s),", strings.TrimSuffix(s, ","))
 		if columnName == nil {
-			for k :=range  data {
+			for k := range data {
 				columnName = append(columnName, k)
 			}
 		}
-		for _, key := range  columnName {
+		for _, key := range columnName {
 			columnData = append(columnData, data[key])
 		}
 		sqlColumn = strings.Join(columnName, ",")
 	}
 	sqlString := fmt.Sprintf("INSERT INTO `%s`(%s) values %s", table, sqlColumn, strings.TrimSuffix(placeString, ","))
 	if c._debug {
-		fmt.Println("SQL Debug:", sqlString,"\nSQL Param:", columnData)
+		log.Println("SQL Debug:", sqlString, "\nSQL Param:", columnData)
 	}
 	res, err := c.Db.Exec(sqlString, columnData...)
 	if err != nil {
@@ -320,7 +309,7 @@ func (c *Client) BatchInsert(table string, datas []DataStruct) (num int64, err e
 }
 func (c *Client) Query(sqlString string, args ...interface{}) ([]map[string]interface{}, error) {
 	if c._debug {
-		fmt.Println("SQL Debug:", sqlString,"\nSQL Param:", args)
+		log.Println("SQL Debug:", sqlString, "\nSQL Param:", args)
 	}
 	rows, err := c.Db.Query(sqlString, args...)
 	if err != nil {
@@ -340,7 +329,7 @@ func (c *Client) Query(sqlString string, args ...interface{}) ([]map[string]inte
 		_ = rows.Scan(cache...)
 		item := make(map[string]interface{})
 		for i, data := range cache {
-			vData:=*(data.(*interface{}))
+			vData := *(data.(*interface{}))
 			switch vData.(type) {
 			case []uint8:
 				item[columns[i]] = string(vData.([]uint8))
@@ -354,4 +343,3 @@ func (c *Client) Query(sqlString string, args ...interface{}) ([]map[string]inte
 	}
 	return results, nil
 }
-
