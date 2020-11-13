@@ -23,6 +23,12 @@ func init() {
 func main()  {
 	data, err := DB.GetOne("test", "*", "id > ? ORDER BY id DESC", 11)
 	fmt.Println(data,err)
+	//insert single data
+	postData := map[string]interface{}{
+		"title": "title",
+		"uid":   22,
+	}
+	DB.Insert("test", postData)
 }
 
 ```
