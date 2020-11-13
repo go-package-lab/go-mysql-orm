@@ -213,7 +213,15 @@ func (c *Client) Select(table string, fields string, where string, args ...inter
 		_ = rows.Scan(cache...)
 		item := make(map[string]interface{})
 		for i, data := range cache {
-			item[columns[i]] = *(data.(*interface{})) //取实际类型
+			vData:=*(data.(*interface{}))
+			switch vData.(type) {
+			case []uint8:
+				item[columns[i]] = string(vData.([]uint8))
+			case int64:
+				item[columns[i]] = vData
+			default:
+				item[columns[i]] = vData
+			}
 		}
 		results = append(results, item)
 	}
@@ -332,7 +340,15 @@ func (c *Client) Query(sqlString string, args ...interface{}) ([]map[string]inte
 		_ = rows.Scan(cache...)
 		item := make(map[string]interface{})
 		for i, data := range cache {
-			item[columns[i]] = *(data.(*interface{})) //取实际类型
+			vData:=*(data.(*interface{}))
+			switch vData.(type) {
+			case []uint8:
+				item[columns[i]] = string(vData.([]uint8))
+			case int64:
+				item[columns[i]] = vData
+			default:
+				item[columns[i]] = vData
+			}
 		}
 		results = append(results, item)
 	}
