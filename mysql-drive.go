@@ -27,13 +27,13 @@ type Client struct {
 }
 func NewClient(cfg Config) *Client {
 	c:= Client{}
-	c.DriverName = "mysql"
-	c.Addr = "127.0.0.1"
-	c.User = "root"
-	c.Passwd = "root"
-	c.Port = "3306"
-	c.DBName = "test1"
-	c.Debug = true
+	c.DriverName = cfg.DriverName
+	c.Addr = cfg.Addr
+	c.User = cfg.User
+	c.Passwd = cfg.Passwd
+	c.Port = cfg.Port
+	c.DBName = cfg.DBName
+	c.Debug = cfg.Debug
 	c.Connect()
 	return &c
 }
