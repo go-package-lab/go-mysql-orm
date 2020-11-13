@@ -47,6 +47,11 @@ func NewClient(conf Config) *Client {
 		log.Println(err)
 		return nil
 	}
+	if conf.Debug == "true" {
+		c._debug = true
+	} else {
+		c._debug = false
+	}
 	maxOpenConns := 0
 	if c.MaxOpenConns > 0 {
 		maxOpenConns = c.MaxOpenConns
