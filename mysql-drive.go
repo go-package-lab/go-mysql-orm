@@ -170,9 +170,13 @@ func (c *Client) GetOne(table, fields, where string, args ...interface{}) (map[s
 	for rows.Next() {
 		_ = rows.Scan(cache...)
 		for i, data := range cache {
-			item[columns[i]] = *(data.(*interface{})) //取实际类型
+			vData:=*(data.(*interface{}))
+			vData2:=vData.([]uint8)
+			item[columns[i]] = vData2
 		}
 	}
+	//data := datas[key].([]uint8)
+	//return string(data)
 	return item, nil
 }
 
