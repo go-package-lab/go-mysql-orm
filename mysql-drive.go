@@ -9,7 +9,7 @@ import (
 )
 
 type DataStruct map[string]interface{}
-type Client struct {
+type Config struct {
 	Db           *sql.DB
 	DriverName   string
 	Addr         string
@@ -21,17 +21,19 @@ type Client struct {
 	MaxIdleConns int
 	Debug        bool
 }
-
-func NewClient(opt *sql.DB) *Client {
-	c := Client{
-		DriverName: "mysql",
-		Addr:       "127.0.0.1",
-		User:       "root",
-		Passwd:     "root",
-		Port:       "3306",
-		DBName:     "test1",
-		Debug:     true,
-	}
+type Client struct {
+	*sql.DB
+	Config
+}
+func NewClient(cfg Config) *Client {
+	c:= Client{}
+	c.DriverName = "mysql"
+	c.Addr = "127.0.0.1"
+	c.User = "root"
+	c.Passwd = "root"
+	c.Port = "3306"
+	c.DBName = "test1"
+	c.Debug = true
 	c.Connect()
 	return &c
 }
