@@ -19,7 +19,8 @@ type Config struct {
 	DBName       string
 	MaxOpenConns int
 	MaxIdleConns int
-	Debug        bool
+	Debug        string
+	_debug       bool
 }
 type Client struct {
 	*sql.DB
@@ -33,7 +34,11 @@ func NewClient(cfg Config) *Client {
 	c.Passwd = cfg.Passwd
 	c.Port = cfg.Port
 	c.DBName = cfg.DBName
-	c.Debug = cfg.Debug
+	if cfg.Debug=="true" {
+		c._debug = true
+	} else {
+		c._debug = false
+	}
 	c.Connect()
 	return &c
 }
@@ -103,7 +108,7 @@ func (c *Client) Insert(table string, datas DataStruct) (id int64, err error) {
 	placeString := fmt.Sprintf("%s", strings.Repeat("?,", len(v)))
 	placeString = placeString[:len(placeString)-1]
 	sqlString := "INSERT INTO `" + table + "` (" + s + ") VALUES (" + placeString + ")"
-	if c.Debug {
+	if c._debug {
 		fmt.Println("SQL Debug:", sqlString,"\nSQL Param:", v)
 	}
 	result, err := c.Db.Exec(sqlString, v...)
@@ -127,7 +132,7 @@ func (c *Client) Update(table string, datas DataStruct, where string, args ...in
 	for _, value := range args {
 		v = append(v, value)
 	}
-	if c.Debug {
+	if c._debug {
 		fmt.Println("SQL Debug:", sqlString,"\nSQL Param:", v)
 	}
 	result, err := c.Db.Exec(sqlString, v...)
@@ -145,7 +150,7 @@ func (c *Client) GetOne(table, fields, where string, args ...interface{}) (map[s
 		sqlString += " WHERE " + where
 	}
 	sqlString += " LIMIT 0,1"
-	if c.Debug {
+	if c._debug {
 		fmt.Println("SQL Debug:", sqlString,"\nSQL Param:", args)
 	}
 	rows, err := c.Db.Query(sqlString, args...)
@@ -177,7 +182,7 @@ func (c *Client) Select(table string, fields string, where string, args ...inter
 	if where != "" {
 		sqlString += " WHERE " + where
 	}
-	if c.Debug {
+	if c._debug {
 		fmt.Println("SQL Debug:", sqlString,"\nSQL Param:", args)
 	}
 	rows, err := c.Db.Query(sqlString, args...)
@@ -209,7 +214,7 @@ func (c *Client) Delete(table string, where string, args ...interface{}) (num in
 	if where != "" {
 		sqlString += " WHERE " + where
 	}
-	if c.Debug {
+	if c._debug {
 		fmt.Println("SQL Debug:", sqlString,"\nSQL Param:", args)
 	}
 	stmt, err := c.Db.Prepare(sqlString)
@@ -226,7 +231,7 @@ func (c *Client) Count(table string, where string, args ...interface{}) (total i
 	if where != "" {
 		sqlString += " WHERE " + where
 	}
-	if c.Debug {
+	if c._debug {
 		fmt.Println("SQL Debug:", sqlString,"\nSQL Param:", args)
 	}
 	stmt, err := c.Db.Prepare(sqlString)
@@ -282,7 +287,7 @@ func (c *Client) BatchInsert(table string, datas []DataStruct) (num int64, err e
 		sqlColumn = strings.Join(columnName, ",")
 	}
 	sqlString := fmt.Sprintf("INSERT INTO `%s`(%s) values %s", table, sqlColumn, strings.TrimSuffix(placeString, ","))
-	if c.Debug {
+	if c._debug {
 		fmt.Println("SQL Debug:", sqlString,"\nSQL Param:", columnData)
 	}
 	res, err := c.Db.Exec(sqlString, columnData...)
@@ -296,7 +301,7 @@ func (c *Client) BatchInsert(table string, datas []DataStruct) (num int64, err e
 	return
 }
 func (c *Client) Query(sqlString string, args ...interface{}) ([]map[string]interface{}, error) {
-	if c.Debug {
+	if c._debug {
 		fmt.Println("SQL Debug:", sqlString,"\nSQL Param:", args)
 	}
 	rows, err := c.Db.Query(sqlString, args...)
