@@ -173,7 +173,7 @@ func (c *Client) GetOne(table, fields, where string, args ...interface{}) (map[s
 			vData:=*(data.(*interface{}))
 			switch vData.(type) {
 			case []uint8:
-				item[columns[i]] = vData.([]uint8)
+				item[columns[i]] = string(vData.([]uint8))
 			case int64:
 				item[columns[i]] = vData
 			default:
