@@ -171,8 +171,14 @@ func (c *Client) GetOne(table, fields, where string, args ...interface{}) (map[s
 		_ = rows.Scan(cache...)
 		for i, data := range cache {
 			vData:=*(data.(*interface{}))
-			vData2:=vData.([]uint8)
-			item[columns[i]] = vData2
+			switch vData.(type) {
+			case []uint8:
+				item[columns[i]] = vData.([]uint8)
+			case int64:
+				item[columns[i]] = vData
+			default:
+				item[columns[i]] = vData
+			}
 		}
 	}
 	//data := datas[key].([]uint8)
